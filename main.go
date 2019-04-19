@@ -33,9 +33,6 @@ func main() {
 	}
 
 	wg.Wait()
-
-	fmt.Println("---")
-	fmt.Println(*rate, *inflight, command)
 }
 
 func readStdIn(args chan string, rate int) {
