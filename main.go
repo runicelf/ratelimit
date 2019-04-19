@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -53,19 +52,12 @@ func readStdIn(args chan string, rate int) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	for _, arg := range stdInBuffer {
-	Start:
-		select {
-		case <-ticker.C:
+		if rateCounter == 0 {
+			<-ticker.C
 			rateCounter = rate
-		default:
-			if rateCounter > 0 {
-				rateCounter--
-				args <- arg
-			} else {
-				runtime.Gosched()
-				goto Start
-			}
 		}
+		rateCounter--
+		args <- arg
 	}
 }
 
