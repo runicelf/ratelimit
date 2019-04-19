@@ -17,6 +17,10 @@ func main() {
 	inflight := flag.Int("inflight", 1, "максимальное количество параллельно запущенных команд")
 	flag.Parse()
 
+	if len(flag.Args()) == 0 {
+		panic("не передана команда")
+	}
+
 	command := flag.Args()[0]
 
 	args := make(chan string, *inflight)
