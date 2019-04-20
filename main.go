@@ -18,10 +18,11 @@ func main() {
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
-		panic("не передана команда")
+		fmt.Println("не передана команда")
+		return
 	}
 
-	command := flag.Args()[0]
+	command := strings.Join(flag.Args(), " ")
 
 	args := make(chan string, *inflight)
 	go readStdIn(args, *rate)
@@ -53,22 +54,30 @@ func readStdIn(args chan string, rate int) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	for _, arg := range stdInBuffer {
-		if rateCounter == 0 {
-			<-ticker.C
+		select {
+		case <-ticker.C:
 			rateCounter = rate
+			rateCounter--
+			args <- arg
+		default:
+			if rateCounter == 0 {
+				<-ticker.C
+				rateCounter = rate
+			}
+
+			rateCounter--
+			args <- arg
 		}
-		rateCounter--
-		args <- arg
 	}
 }
 
 func execCommandWorker(command string, args chan string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for input := range args {
-		argsSlice := strings.Split(input, " ")
+	for arg := range args {
+		wholeCommand := strings.Split(strings.Replace(command, "{}", arg, 1), " ")
 
-		cmd := exec.Command(command, argsSlice...)
+		cmd := exec.Command(wholeCommand[0], wholeCommand[1:]...)
 		bytes, err := cmd.Output()
 		checkErr(err)
 
